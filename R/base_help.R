@@ -3,15 +3,21 @@
 #'
 #' Help pages without links to other help pages.
 #' This makes harder to navigate to related help pages.
-#' @returns A data.frame with two columns: Package and Source
+#' @returns A data.frame with two columns: Package and Source.
+#' `NA` if not able to collect the data from CRAN.
 #' @export
 #' @family functions related to BASE help pages
 #' @examples
+#' \donttest{
 #' bhnl <- base_help_pages_not_linked()
 #' head(bhnl)
+#' }
 base_help_pages_not_linked <- function() {
     bal <- base_alias()
     bl <- base_links()
+    if (is_not_data(bl)) {
+        return(NA)
+    }
     bl2 <- split_anchor(bl)
     rbl <- targets2files(bl2, bal)
 
@@ -37,12 +43,17 @@ base_help_pages_not_linked <- function() {
 #' @export
 #' @family functions related to BASE help pages
 #' @examples
+#' \donttest{
 #' bhwl <- base_help_pages_wo_links()
 #' head(bhwl)
+#' }
 base_help_pages_wo_links <- function() {
 
     bal <- base_alias()
     bl <- base_links()
+    if (is_not_data(bl)) {
+        return(NA)
+    }
     bl2 <- split_anchor(bl)
     rbl <- targets2files(bl2, bal)
     alias_cols <- c("Package", "Source")
@@ -65,11 +76,14 @@ base_help_pages_wo_links <- function() {
 #'
 #' Requires igraph
 #' @returns Return a data.frame of help pages not connected to the network of help pages.
+#' `NA` if not able to collect the data from CRAN.
 #' @family functions related to BASE help pages
 #' @export
-#' @examplesIf requireNamespace("igraph", quietly = TRUE)
+#' @examples
 #' \donttest{
-#' base_help_cliques()
+#' if (requireNamespace("igraph", quietly = TRUE)) {
+#'     base_help_cliques()
+#' }
 #' }
 base_help_cliques <- function() {
     if (!check_installed("igraph")) {
@@ -77,6 +91,9 @@ base_help_cliques <- function() {
     }
     bal <- base_alias()
     bl <- base_links()
+    if (is_not_data(bl)) {
+        return(NA)
+    }
     bl2 <- split_anchor(bl)
     rbl <- targets2files(bl2, bal)
     df_links <- data.frame(from = paste0(rbl$from_pkg, ":", rbl$from_Rd),

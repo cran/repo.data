@@ -116,9 +116,6 @@ section.footnotes {
 <div class="title"><h1>repo.data</h1></div>
 </div>
 <div class="body">
-<pre><code class="language-r">options(repos = c(&quot;@CRAN@&quot; = &quot;https://CRAN.R-project.org&quot;))
-library(repo.data)
-</code></pre>
 <p>This vignette is written for concerned package maintainers or users that want to check their package in relationship with other packages.
 For general usage of the other functions check the manual or package index (a vignette might come too).</p>
 <h1 id="chp:keeping-up-with-the-repositories">Keeping up with the repositories</h1>
@@ -128,12 +125,12 @@ This is useful for developing packages that should remain compatible with old ve
 <pre><code class="language-r">pd &lt;- package_dependencies(&quot;ggeasy&quot;)
 head(pd)
 #&gt;        Name Version    Type   Op Package
-#&gt; 1         R   4.4.0 Depends   &gt;=    &lt;NA&gt;
+#&gt; 1         R   4.1.0 Depends   &gt;=    &lt;NA&gt;
 #&gt; 2       cli   3.4.0 Imports   &gt;=    &lt;NA&gt;
 #&gt; 3 lifecycle   1.0.3 Imports   &gt;=    &lt;NA&gt;
 #&gt; 4     rlang   1.1.0 Imports   &gt;=    &lt;NA&gt;
-#&gt; 5     vctrs   0.6.0 Imports   &gt;=    &lt;NA&gt;
-#&gt; 6 grDevices    &lt;NA&gt;    &lt;NA&gt; &lt;NA&gt;    &lt;NA&gt;
+#&gt; 5     utils    &lt;NA&gt; Imports &lt;NA&gt;    &lt;NA&gt;
+#&gt; 6   ggplot2    &lt;NA&gt; Imports &lt;NA&gt;  ggeasy
 </code></pre>
 <p><code>package_dependencies()</code> identify the minimal version required for each dependency.
 If no version is required by any dependencies <code>NA</code> is used.</p>
@@ -163,8 +160,6 @@ If the date the dependencies are available is closer to the published date, the 
 <p>Help pages are found via alias, when a user press <code>?word</code> it searches for alias.
 Checking for existing alias might help you to find packages and reduce the confusion on the help pages.</p>
 <pre><code class="language-r">alias &lt;- cran_alias(c(&quot;fect&quot;, &quot;gsynth&quot;))
-#&gt; Retrieving cran_aliases, this might take a bit.
-#&gt; Caching results to be faster next call in this session.
 dup_alias &lt;- duplicated_alias(alias)
 head(dup_alias)
 #&gt;          Target Package             Source
@@ -186,40 +181,23 @@ head(dup_alias)
 head(cran_help_pages_wo_links(pkg))
 #&gt; Retrieving base_aliases, this might take a bit.
 #&gt; Caching results to be faster next call in this session.
-#&gt; Warning: Omitting packages bartMachineJARs, clean, fontBitstreamVera, fontLiberation, GreedyExperimentalDesignJARs, hse, LifeInsuranceContracts, openNLPdata, positron.tutorials, RKEAjars, RMOAjars, ROI.plugin.cplex, ROI.plugin.glpk, ROI.plugin.ipop, ROI.plugin.symphony, rsparkling, RWekajars, Sejong.
-#&gt; Maybe they are currently not on CRAN?
-#&gt; Warning: Packages 'Hmisc', 'geneHapR', 'sfsmisc' have targets not present in a
-#&gt; OS.
-#&gt; Retrieving cran_rdxrefs, this might take a bit.
-#&gt; Caching results to be faster next call in this session.
-#&gt; Warning in cran_links(cran_pkgs): Omitting packages bartMachineJARs, clean, fontBitstreamVera, fontLiberation, GreedyExperimentalDesignJARs, hse, LifeInsuranceContracts, openNLPdata, positron.tutorials, RKEAjars, RMOAjars, ROI.plugin.cplex, ROI.plugin.glpk, ROI.plugin.ipop, ROI.plugin.symphony, rsparkling, RWekajars, Sejong.
-#&gt; Maybe they are currently not on CRAN?
-#&gt; Warning: Some pages point to different places according to the OS.
-#&gt; Warning: Some links are distinct depending on the OS.
-#&gt;   Package             Source
-#&gt; 1 BaseSet BaseSet-package.Rd
-#&gt; 2 BaseSet   TidySet-class.Rd
-#&gt; 3 BaseSet        activate.Rd
-#&gt; 4 BaseSet      add_column.Rd
-#&gt; 5 BaseSet    add_elements.Rd
-#&gt; 6 BaseSet    add_relation.Rd
+#&gt; [1] NA
 head(cran_help_pages_not_linked(pkg))
-#&gt;   Package             Source
-#&gt; 1 BaseSet BaseSet-package.Rd
-#&gt; 2 BaseSet   TidySet-class.Rd
-#&gt; 3 BaseSet        activate.Rd
-#&gt; 4 BaseSet      add_column.Rd
-#&gt; 5 BaseSet    add_elements.Rd
-#&gt; 6 BaseSet    add_relation.Rd
+#&gt; [1] NA
 </code></pre>
 <p>In addition to those help pages that are not well connected it could be that some pages are linked but link to each other without connecting with other help pages of the package or other packages.</p>
 <p>To retrieve these help pages forming a clique it requires the suggested package igraph.</p>
 <pre><code class="language-r">cliques &lt;- cran_help_cliques(pkg)
-#&gt; Warning in cran_targets_links(pkges): Omitting packages BaseSet, dplyr, methods, rlang, utils, cli, generics, glue, lifecycle, magrittr, pillar, R6, tibble, tidyselect, vctrs, utf8, pkgconfig, withr, graphics, grDevices.
-#&gt; Maybe they are currently not on CRAN?
+#&gt; Retrieving cran_rdxrefs, this might take a bit.
+#&gt; Caching results to be faster next call in this session.
+#&gt; Warning: Some links are distinct depending on the OS.
 # Number of help pages connected
-table(cliques$n) 
-#&gt; &lt; table of extent 0 &gt;
+if (length(cliques) != 1) {
+    table(cliques$n) 
+}
+#&gt; 
+#&gt;    1 
+#&gt; 4047
 </code></pre>
 <p>If there is more than one length this would mean some pages not linked to the rest of the package.</p>
 <p>Sometimes even if links exists they might not resolve correctly on the html version.
@@ -237,7 +215,7 @@ For example if they link to a help page of a package that is not on the strong d
 #&gt; Retrieving comments, this might take a bit.
 #&gt; Caching results to be faster next call in this session.
 nrow(cs)
-#&gt; [1] 102015
+#&gt; [1] 102824
 </code></pre>
 <p>This might be helpful to know what was available on old project and why some feature of a given package wasn’t used.
 Maybe it wasn’t available on a given date!</p>
@@ -245,8 +223,6 @@ Maybe it wasn’t available on a given date!</p>
 <p>While working it might be good to update packages.
 To decide if it is needed maybe you’d like to know when were packages last updated on the system?</p>
 <pre><code class="language-r">cran_session()
-#&gt; Warning in cran_archive(versions[, &quot;Package&quot;]): Omitting packages repo.data.
-#&gt; Maybe they were not on CRAN?
 #&gt; [1] &quot;2025-08-27 18:40:06 CEST&quot;
 </code></pre>
 <p>This uses the <code>sessionInfo()</code> output to find the date of last installation.
@@ -259,11 +235,7 @@ cran_date(versions)
 <p>This is the first date were these packages were at the requested version number (or available).
 Currently these packages can have a release with higher version numbers (this can be easily checked with <code>old.packages()</code>).</p>
 <p>To answer the original question of this section we can use:</p>
-<pre><code class="language-r">ip &lt;- cran_date(installed.packages())
-#&gt; Warning in cran_archive(versions[, &quot;Package&quot;]): Omitting packages repo.data, airway, alabaster.base, alabaster.matrix, alabaster.ranges, alabaster.sce, alabaster.schemas, alabaster.se, annotate, AnnotationDbi, AnnotationFilter, AnnotationHub, assorthead, Biobase, BiocFileCache, BiocGenerics, BiocIO, BioCor, BiocParallel, BiocPkgTools, BiocStyle, BiocVersion, biocViews, biomformat, Biostrings, cransays, DelayedArray, DESeq2, ensembldb, ExperimentHub, fgsea, GenomeInfoDb, GenomeInfoDbData, GenomicAlignments, GenomicFeatures, GenomicRanges, GO.db, GOSemSim, GSEABase, gypsum, h5mread, HDF5Array, IRanges, KEGGREST, MatrixGenerics, microshades, org.Hs.eg.db, phyloseq, preprocessCore, ProtGenerics, reactome.db, resios, rhdf5, rhdf5filters, Rhdf5lib, Rhtslib, rostemplate, rotemplate, Rsamtools, rtracklayer, rutils, S4Arrays, S4Vectors, scRNAseq, SingleCellExperiment, SparseArray, SummarizedExperiment, UCSC.utils, XVector.
-#&gt; Maybe they were not on CRAN?
-ip
-#&gt; [1] &quot;2025-08-29 16:00:06 CEST&quot;
+<pre><code class="language-r">cran_date(installed.packages())
 </code></pre>
 <h3 id="sec:risk-of-being-archived">Risk of being archived</h3>
 <p>If you ever wonder which packages are at risk of being archived you can use <code>cran_doom()</code>:</p>
@@ -272,17 +244,10 @@ ip
 #&gt; Caching results to be faster next call in this session.
 #&gt; Retrieving bioc_available_release, this might take a bit.
 #&gt; Caching results to be faster next call in this session.
-cd[c(&quot;time_till_last&quot;, &quot;last_archived&quot;, &quot;npackages&quot;)]
-#&gt; $time_till_last
-#&gt; Time difference of 71 days
-#&gt; 
-#&gt; $last_archived
-#&gt; [1] &quot;2025-11-20&quot;
-#&gt; 
-#&gt; $npackages
-#&gt;  CRAN   all 
-#&gt; 22691 26397
-knitr::kable(head(cd$details))
+if (length(cd) != 1) {
+    cd[c(&quot;time_till_last&quot;, &quot;last_archived&quot;, &quot;npackages&quot;)]
+    knitr::kable(head(cd$details))
+}
 </code></pre>
 <table>
 <thead>
@@ -296,46 +261,46 @@ knitr::kable(head(cd$details))
 </thead>
 <tbody>
 <tr>
-<td align="left">geeasy</td>
-<td align="left">2025-09-03</td>
-<td align="left">direct</td>
-<td align="left">CRAN</td>
-<td align="right">6</td>
-</tr>
-<tr>
-<td align="left">spsComps</td>
-<td align="left">2025-09-03</td>
-<td align="left">direct</td>
-<td align="left">CRAN</td>
-<td align="right">2</td>
-</tr>
-<tr>
-<td align="left">GLDreg</td>
-<td align="left">2025-09-03</td>
+<td align="left">kvkapiR</td>
+<td align="left">2025-09-22</td>
 <td align="left">direct</td>
 <td align="left">CRAN</td>
 <td align="right">1</td>
 </tr>
 <tr>
-<td align="left">maxLik</td>
-<td align="left">2025-09-03</td>
-<td align="left">direct</td>
-<td align="left">CRAN</td>
-<td align="right">1</td>
-</tr>
-<tr>
-<td align="left">geotargets</td>
-<td align="left">2025-09-06</td>
-<td align="left">direct</td>
-<td align="left">CRAN</td>
-<td align="right">2</td>
-</tr>
-<tr>
-<td align="left">fgdr</td>
-<td align="left">2025-09-11</td>
+<td align="left">metacoder</td>
+<td align="left">2025-09-25</td>
 <td align="left">direct</td>
 <td align="left">CRAN</td>
 <td align="right">5</td>
+</tr>
+<tr>
+<td align="left">DescrTab2</td>
+<td align="left">2025-09-25</td>
+<td align="left">direct</td>
+<td align="left">CRAN</td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="left">fgdr</td>
+<td align="left">2025-09-25</td>
+<td align="left">direct</td>
+<td align="left">CRAN</td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="left">jstor</td>
+<td align="left">2025-09-25</td>
+<td align="left">direct</td>
+<td align="left">CRAN</td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="left">tidystats</td>
+<td align="left">2025-09-25</td>
+<td align="left">direct</td>
+<td align="left">CRAN</td>
+<td align="right">4</td>
 </tr>
 </tbody>
 </table>
@@ -368,7 +333,7 @@ I participate on the <a href="https://www.cranhaven.org/dashboard-at-risk.html">
 #&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     
 #&gt; 
 #&gt; other attached packages:
-#&gt; [1] repo.data_0.1.4
+#&gt; [1] repo.data_0.1.5
 #&gt; 
 #&gt; loaded via a namespace (and not attached):
 #&gt;  [1] compiler_4.5.1    magrittr_2.0.3    cli_3.6.5         rversions_2.1.2  

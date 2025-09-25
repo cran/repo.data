@@ -1,6 +1,6 @@
 Package: repo.data
 Title: R Repository Data
-Version: 0.1.4
+Version: 0.1.5
 Authors@R: 
     person("Lluís", "Revilla Sancho", , "lluis.revilla@gmail.com", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0001-9747-2570"))
@@ -23,9 +23,9 @@ Language: en-US
 LazyData: true
 RoxygenNote: 7.3.2
 NeedsCompilation: no
-Packaged: 2025-09-09 22:54:37 UTC; lluis
+Packaged: 2025-09-25 06:14:42 UTC; lluis
 Author: Lluís Revilla Sancho [aut, cre, cph] (ORCID:
     <https://orcid.org/0000-0001-9747-2570>)
 Maintainer: Lluís Revilla Sancho <lluis.revilla@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-09-15 07:20:02 UTC
+Date/Publication: 2025-09-25 09:30:02 UTC
