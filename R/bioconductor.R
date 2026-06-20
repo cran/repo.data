@@ -15,7 +15,7 @@
 bioc_cran_archived <- function(which = "strong") {
     fields_selected <- check_which(which)
     bioc <- bioc_available()
-    db <- save_state("CRAN_db", tools::CRAN_package_db())
+    db <- save_state(c("CRAN's packages database" = "CRAN_db"), tools::CRAN_package_db())
     if (is_not_data(db)) {
         return(NA)
     }
@@ -50,7 +50,9 @@ bioc_version <- function(type = "release") {
     }
     # Quick and dirty way to read and split the data
     rv <- read.csv(text = rl[version], sep = ":", header = FALSE, colClasses = c("character", "character"))
-    trimws(rv$V2)
+    BIOC_VERSION <- trimws(rv$V2)
+    Sys.setenv(R_BIOC_VERSION = BIOC_VERSION)
+    BIOC_VERSION
 }
 
 
@@ -71,7 +73,8 @@ bioc_available <- function(version = "release",
     url_repos <- bioc_repos(version, repos)
     opts <- options(available_packages_filters = c("CRAN", "duplicates"))
     on.exit(options(opts), add = TRUE)
-    bioc <- save_state(paste0("bioc_available_", version),
+    env <- paste0("bioc_available_", version)
+    bioc <- save_state(c("packages available on Bioconductor" = env),
         available.packages(repos = url_repos))
     if (is_not_data(bioc)) {
         return(NA)
@@ -85,22 +88,22 @@ bioc_views <- function(version = bioc_version()) {
         return(NA)
     }
     url <- paste0("https://bioconductor.org/packages/", version, "/bioc/VIEWS")
-    read.dcf(url(url))
+    tryCatch(read.dcf(url(url)), warning = function(w){NA}, error = function(e){NA})
 }
 
 bioc_archive <- function() {
     # TODO convert this to extract the dates of the latest publication of the package.
     # As no new packages are added until the next release we can assume they were
     # on the date most packages were updated
-    v <- paste0(3, ".", 1:21)
+    v <- paste0(3, ".", 1L:21L)
     bv <- lapply(v, bioc_views)
 
-    versions <- rep(v, vapply(bv, NROW, numeric(1L)))
+    # versions <- rep(v, vapply(bv, NROW, numeric(1L)))
     # m1 <- do.call(merge, bv, all = TRUE)
 
-    v2 <- paste0(2, ".", 1:14)
+    v2 <- paste0(2, ".", 1L:14L)
     bv2 <- lapply(v2, bioc_views)
-    versions2 <- rep(v2, vapply(bv2, NROW, numeric(1L)))
+    rep(v2, vapply(bv2, NROW, numeric(1L)))
     # m2 <- do.call(merge, bv2, all = TRUE)
     # m <- merge(m1, m2, all = TRUE, sort = FALSE)
 }

@@ -1,7 +1,7 @@
 
 #' Package dependencies to repositories
 #'
-#' Explore the relationships between packages and repositories available.
+#' Explore the relationships between packages and repositories.
 #' @inheritParams tools::package_dependencies
 #' @param repos Repositories and their names are taken from `getOptions("repos")`.
 #'
@@ -17,35 +17,39 @@
 #' head(pr)
 package_repos <- function(packages = NULL, repos = getOption("repos"), which = "all") {
     stopifnot(is.character(repos) && length(repos))
-    check_packages(packages, length = NA)
-
+    check_pkg_names(packages, length = NA)
     which <- check_which(which)
+
+    unam_repos <- unique(names(repos))
+    repos <- unique(repos)
+    names(repos) <- unam_repos
+
     ap <- tryCatch(available.packages(repos = repos, filters = c("CRAN", "duplicates")),
-                   warning = function(w){NA})
+                   warning = function(w){NA}, error = function(e){NA})
     if (is_not_data(ap)) {
         return(NA)
     }
 
     # Check packages
-    repos_packages <- setdiff(packages, BASE)
-    omit_pkg <- setdiff(packages, rownames(ap))
-    if (length(omit_pkg)) {
-        warning("Omitting packages ", toString(omit_pkg),
-                ".\n Maybe they are currently not available?",
-                immediate. = TRUE, call. = FALSE)
-    }
-    if (is.null(packages)) {
+    omit_pkg <- check_current_pkg(setdiff(packages, BASE), rownames(ap))
+
+    # Keep only packages that can be processed
+    repos_packages <- setdiff(packages, omit_pkg)
+
+    if (is.null(repos_packages)) {
         packages <- rownames(ap)
     } else {
-        packages <- intersect(packages, rownames(ap))
+        packages <- intersect(repos_packages, rownames(ap))
     }
 
-    # Get the repo where each package comes from
-    repositories <- gsub("/src/contrib", "", ap[, "Repository"], fixed = TRUE)
+    # Get the repo where each package comes from: CRAN sometimes has packages under src/contrib/other dir
+    repositories <- gsub("/src/contrib.*", "", ap[, "Repository"])
     names(repositories) <- rownames(ap)
     repositories[] <- names(repos)[match(repositories, repos)]
 
     # Get the direct dependencies for each package
+    opts <- options(repos = repos)
+    on.exit(opts, add = TRUE)
     rd <- repos_dependencies(packages, which)
 
     pd2 <- rd[!rd$Name %in% c(BASE, "R"), c("Name", "Package")]
@@ -54,7 +58,7 @@ package_repos <- function(packages = NULL, repos = getOption("repos"), which = "
     pd2$Repo[is.na(pd2$Repo)] <- "Other"
 
     # Prefill matrix
-    M <- matrix(0, ncol = length(repos) + 1L, nrow = NROW(ap))
+    M <- matrix(0L, ncol = length(repos) + 1L, nrow = NROW(ap))
     colnames(M) <- c(names(repos), "Other")
     rownames(M) <- rownames(ap)
 
@@ -76,6 +80,7 @@ package_repos <- function(packages = NULL, repos = getOption("repos"), which = "
     # bioc_deps <- rowSums(M2[, 2:6])
     df3 <- cbind(Package = rownames(df2), Repository = repositories, df2)
     df3 <- df3[packages, , drop = FALSE]
+    df3 <- unique(df3)
     rownames(df3) <- NULL
     df3
 }

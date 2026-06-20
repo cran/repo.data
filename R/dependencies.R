@@ -15,25 +15,24 @@
 #' head(rd)
 repos_dependencies <- function(packages = NULL, which = "all") {
     fields_selected <- check_which(which)
-    check_packages(packages, 0)
+    check_pkg_names(packages, NA)
     opts <- options(available_packages_filters = c("CRAN", "duplicates"))
     on.exit(options(opts), add = TRUE)
-    env <- "repos_dependencies"
+    env <- c("repositories dependencies" = "repos_dependencies")
 
     first <- empty_env(env)
-    ap <- tryCatch(available.packages(), warning = function(w){NA})
+    ap <- tryCatch(available.packages(), warning = function(w){NA}, error = function(e){NA})
     if (is_not_data(ap)) {
         return(NA)
     }
     pd <- pkg_state[[env]]
     all_packages <- rownames(ap)
 
-    omit_pkg <- setdiff(packages, all_packages)
-    if (length(omit_pkg)) {
-        warning("Omitting packages ", toString(omit_pkg),
-                ".\n Maybe they are currently not available?",
-                immediate. = TRUE, call. = FALSE)
-    }
+    # Check for missing packages
+    omit_pkg <- check_current_pkg(packages, all_packages)
+
+    # Keep only packages that can be processed
+    packages <- setdiff(packages, omit_pkg)
 
     new_pkgs <- if (first && is.null(packages)) {
         all_packages
@@ -65,10 +64,13 @@ repos_dependencies <- function(packages = NULL, which = "all") {
 #'
 #' Despite the description minimal requirements find which versions are
 #' required due to dependencies.
-#' @param packages Path to a file with a DESCRIPTION file or package's names from a repository.
+#' Reports the minimal version for each package that would be installed now.
+#' @param packages Path to a folder with a DESCRIPTION file or package's names from a repository.
+#' If NULL will pick all packages and their dependencies available.
 #' @inheritParams repos_dependencies
 #'
-#' @returns A data.frame with the name, version required, if only one package requires it it also show the name of the package.
+#' @returns A data.frame with the Package, Type, Name, Op and Version required.
+#' If only one package requires it it also show the name of the package.
 #' `NA` if not able to collect the data from repositories.
 #' @note It keeps the base packages too even if just knowing the R version required would be enough.
 #' @export
@@ -91,12 +93,18 @@ package_dependencies <- function(packages = ".", which = "strong") {
     }
 
     pkges_names <- unique(c(local_pkgs, packages[!is_local_pkg]))
-    check_packages(packages, NA)
+    check_pkg_names(packages, NA)
 
-    ap <- tryCatch(available.packages(filters = c("CRAN", "duplicates")), warning = function(w){NA})
+    ap <- tryCatch(available.packages(filters = c("CRAN", "duplicates")), warning = function(w){NA}, error = function(e){NA})
     if (is_not_data(ap)) {
         return(NA)
     }
+
+    # Keep not only dependencies but available packages
+    if (is.null(packages)) {
+        pkges_names <- c(pkges_names, rownames(ap))
+    }
+
     new_ap <- rbind(ap[, c(fields_selected, "Package"), drop = FALSE],
                     local_ap[, c(fields_selected, "Package"), drop = FALSE])
     all_deps <- tools::package_dependencies(
@@ -121,16 +129,16 @@ package_dependencies <- function(packages = ".", which = "strong") {
     if (length(missing_pkg)) {
         warning(
             paste0(
-                "Some dependencies are not on available repositories. ",
+                sprintf("Some dependencies (%s) are not on available repositories. ", length(missing_pkg)),
                 "Check for 'Additional_repositories' or other repositories (Bioconductor.org?):\n",
-                toString(missing_pkg)
+                toString(sQuote(sort(missing_pkg, decreasing = TRUE)))
             ),
-            immediate. = TRUE
+            immediate. = TRUE, call. = FALSE
         )
     }
     repo_pkges <- setdiff(packages_reported, c(BASE, local_pkgs, "R"))
-    if (length(repo_pkges) <= 0) {
-        rd <- matrix(nrow = 0, ncol = 5, dimnames = list(list(),
+    if (length(repo_pkges) <= 0L) {
+        rd <- matrix(nrow = 0L, ncol = 5L, dimnames = list(list(),
                                                    c("Package", "Version", "Type", "Name", "Op")))
         rd <- as.data.frame(rd)
     } else {
@@ -144,49 +152,57 @@ package_dependencies <- function(packages = ".", which = "strong") {
         rd <- rbind(rd, local_v[, colnames(rd)])
     }
 
-    if (length(repo_pkges) <= 0) {
+    # No package is depended by more than one package
+    if (length(repo_pkges) <= 0L || !anyDuplicated(rd$Name)) {
         return(rd)
     }
 
-    # No package is depended by more than one package
-    if (!anyDuplicated(rd$Name)) {
-        return(rd)
+    no_deps_pkgs <- setdiff(rownames(new_ap), rd$Package)
+    no_deps <- length(no_deps_pkgs)
+    if (no_deps && isFALSE(is_local_pkg)) {
+        message(sprintf("Some packages (%s) don't have any R dependency:\n", no_deps),
+                toString(sort(sQuote(no_deps_pkgs))))
     }
 
     # Calculate the dependency path
-    with_ver_n_dup <- !is.na(rd$Version) & rd$Name %in% rd$Name[duplicated(rd$Name)]
+    # Change type of dependency for those with more than one path to it:
+    missing_v <- !is.na(rd$Version)
+    with_ver_n_dup <- rd$Name %in% rd$Name[duplicated(rd$Name)]
     t2n <- split(rd$Type[with_ver_n_dup], rd$Name[with_ver_n_dup])
-    type_n <- vapply(t2n, function(x){length(unique(x))}, numeric(1L))
-    one_dep <- type_n == 1
+    type_n <- vapply(t2n, function(x){length(unique(x))}, 1L)
+    one_dep <- type_n == 1L
     type <- vector("character", length(t2n))
     type[!one_dep] <- NA
-    type[one_dep] <- vapply(t2n[one_dep], function(x){x[1]}, character(1L))
+    type[one_dep] <- vapply(t2n[one_dep], function(x){x[1L]}, "")
+    df <- data.frame(
+        Type = type,
+        Name = names(t2n),
+        Op = ">=",
+        Version = NA_character_)
 
     # Calculate the version required by the packages selected
-    v2n <- split(rd$Version[with_ver_n_dup], rd$Name[with_ver_n_dup])
+    keep_v <- missing_v & with_ver_n_dup
+    v2n <- split(rd$Version[keep_v], rd$Name[keep_v])
     required <- vapply(v2n, function(versions) {
         as.character(max(versions))
-    }, character(1L))
-    df <- data.frame(Name = names(v2n), Version = as.package_version(required),
-                     Type = type, Op = ">=")
+    }, "")
 
+    df$Version <- required[match(df$Name, names(required))]
+
+    # Restore the package name of the original dependency
+    idx <- match(rd$Name, df$Name)
+    pkgs_name_ver_dup <- unique(rd$Package[with_ver_n_dup])
+    rd_ver <- rd[rd$Package %in% pkgs_name_ver_dup, c("Package", "Name")]
+    df <- merge(rd_ver, df, all.x = FALSE, all.y = TRUE, sort = FALSE)
     rd_no_ver <- rd[!rd$Name %in% df$Name, , drop = FALSE]
-    # Replace Package by NA if Name is repeated.
-    dup_name <- rd_no_ver$Name %in% rd_no_ver$Name[duplicated(rd_no_ver$Name)]
-    rd_no_ver$Package[dup_name] <- NA
-
-    # Replace Type by NA if multiple packages import it with different types
-    t2n <- split(rd_no_ver$Type, rd_no_ver$Name)
-    type_n <- vapply(t2n, function(x){length(unique(x))}, numeric(1L))
-    multiple_types <- rd_no_ver$Name %in% names(type_n)[type_n > 1]
-    rd_no_ver$Type[multiple_types] <- NA
-
-    # Remove duplicated rows
-    rd_no_ver <- unique(rd_no_ver)
-
-    m <- merge(df, rd_no_ver, all = TRUE, sort = FALSE)
+    rd_no_ver$Version <- as.character(rd_no_ver$Version)
+    m <- rbind(df, rd_no_ver)
+    m$Version <- as.package_version(m$Version)
     rownames(m) <- NULL
-    m
+    m <- m[, colnames(rd)]
+    msb <- sort_by(m, m[c("Package", "Type", "Name", "Version")])
+    rownames(msb) <- NULL
+    msb
 }
 
 
@@ -207,10 +223,10 @@ package_dependencies <- function(packages = ".", which = "strong") {
 #' @examples
 #' update_dependencies("arrow")
 update_dependencies <- function(packages) {
-    check_packages(packages, length = NA)
+    check_pkg_names(packages, length = NA)
 
     if (is.null(packages)) {
-        stop("Please provide a vector of packages.")
+        stop("Please provide a vector of packages.", call. = FALSE)
     }
 
     pkg_fields <- check_which("all")
@@ -231,7 +247,7 @@ update_dependencies <- function(packages) {
     # Remote
     opts <- options(available_packages_filters = c("CRAN", "duplicates"))
     on.exit(options(opts), add = TRUE)
-    ap <- tryCatch(available.packages(), warning = function(w){NA})
+    ap <- tryCatch(available.packages(), warning = function(w){NA}, error = function(e){NA})
     if (is_not_data(ap)) {
         return(NA)
     }
@@ -263,15 +279,15 @@ update_dependencies <- function(packages) {
 
     if (!NROW(out)) {
         df <- data.frame(Name = character(1L), Version = package_version("0.0.0"))
-        return(df[0, ])
+        return(df[0L, ])
     }
 
     s <- split(out$Version.recursive, out$Name)
     l <- lapply(s, function(x){
         as.character(max(x))
     })
-    df <- data.frame(Name = names(l), Version = rep(package_version("0.0.0"),
-                                                    length.out = length(l)))
+    df <- data.frame(Name = names(l), Version = rep_len(package_version("0.0.0"),
+                                                        length(l)))
     df$Version[] <- as.package_version(funlist(l))
     df
 }
@@ -283,10 +299,10 @@ cache_pkg_dep <- function(package, which, keepR = TRUE) {
 
 packages_dependencies <- function(ap) {
     stopifnot(!is_not_data(ap))
-    no_deps <- apply(as.matrix(ap), 1, function(x){all(is.na(x))})
+    no_deps <- apply(as.matrix(ap), 1L, function(x){all(is.na(x))})
     ap <- ap[!no_deps, , drop = FALSE]
     if (!NROW(ap)) {
-        m <- matrix(NA, ncol = 5, nrow = 0)
+        m <- matrix(NA, ncol = 5L, nrow = 0L)
         colnames(m) <- c("Package", "Type", "Name", "Op", "Version")
         return(as.data.frame(m))
     }
@@ -362,7 +378,7 @@ check_which <- function(x){
 
     if (!length(fields_selected)) {
         stop(sQuote("which"), " should be one of all, strong, most.\n",
-             "Or several valid fields should be passed: ", toString(PACKAGE_FIELDS), ".")
+             "Or several valid fields should be passed: ", toString(PACKAGE_FIELDS), ".", call. = FALSE)
     }
     fields_selected
 }

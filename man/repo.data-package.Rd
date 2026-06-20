@@ -5,21 +5,26 @@
 \name{repo.data-package}
 \alias{repo.data}
 \alias{repo.data-package}
-\title{repo.data: R Repository Data}
+\title{repo.data: R Repositories Data}
 \description{
-Retrieve metadata about packages from repositories to explore package dependencies, links between help pages, aliases, package availability on a given date, and other repository dependent outcome. This metadata can be used to help package maintainers and users to navigate changes on dependencies and with reproducibility.
+Retrieve metadata about packages from repositories to explore package dependencies, links between help pages, aliases, package availability on a given date, and other repository-dependent outcome. In addition, it provides access to information about the processes at CRAN. This metadata can be used to help package maintainers and users navigate changes to dependencies and with reproducibility.
 }
 \seealso{
 Useful links:
 \itemize{
   \item \url{https://github.com/llrs/repo.data}
-  \item \url{https://llrs.github.io/repo.data/}
+  \item \url{https://repo.data.llrs.dev/}
   \item Report bugs at \url{https://github.com/llrs/repo.data/issues}
 }
 
 }
 \author{
 \strong{Maintainer}: Lluís Revilla Sancho \email{lluis.revilla@gmail.com} (\href{https://orcid.org/0000-0001-9747-2570}{ORCID}) [copyright holder]
+
+Authors:
+\itemize{
+  \item Lluís Revilla Sancho \email{lluis.revilla@gmail.com} (\href{https://orcid.org/0000-0001-9747-2570}{ORCID}) [copyright holder]
+}
 
 }
 \keyword{internal}

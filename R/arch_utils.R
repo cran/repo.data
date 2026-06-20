@@ -1,11 +1,11 @@
-str2mat <- function(pattern, x, columns, perl = FALSE, useBytes = FALSE){
+str2mat <- function(pattern, x, columns, perl = FALSE, useBytes = FALSE) {
     m <- regexec(pattern, x, perl = perl, useBytes = useBytes)
     str <- regmatches(x, m)
     ntokens <- length(columns) + 1L
     nomatch <- lengths(str) == 0L
     str[nomatch] <- list(rep.int(NA_character_, ntokens))
     if (length(str) > 0L && length(str[[1L]]) != ntokens) {
-        stop("The number of captures in 'pattern' != 'length(proto)'")
+        stop("The number of captures in 'pattern' != 'length(proto)'", call. = FALSE)
     }
     mat <- matrix(as.character(unlist(str)), ncol = ntokens,
         byrow = TRUE)[, -1L, drop = FALSE]
@@ -36,6 +36,12 @@ arch2m <- function(arch){
         as.matrix(x[, c("mtime", "size", "uname")])
     })
     mat <- do.call(rbind, l)
+    # Return early if there is no archive data
+    if (!NROW(mat)) {
+        m <- matrix(ncol = 6, nrow = 0)
+        colnames(m) <- c("mtime", "size", "uname", "package", "version", "status")
+        return(as.data.frame(m))
+    }
     # FIXME .tar.gz is not the only way to compress build packages
     pkg_v <- str2mat(pattern = "(.+)_(.+)\\.tar\\.gz",
                      x = rownames(mat),
@@ -98,8 +104,8 @@ filter_arch_date <- function(arch, date, type = "[") {
 
 
 filter_arch_ver <- function(req, arch, req_column = "Name") {
-    stopifnot(c(req_column, "Version") %in% colnames(req))
-    stopifnot(c("Package", "Version") %in% colnames(arch))
+    stopifnot(c(req_column, "Version") %in% colnames(req),
+              c("Package", "Version") %in% colnames(arch))
 
     no_version <- is.na(req[, "Version"])
     # Return the first version of the packages available

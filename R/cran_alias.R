@@ -9,26 +9,25 @@
 #' @seealso The raw source of the data is: \code{\link[tools:CRAN_aliases_db]{CRAN_aliases_db()}}.
 #' @family meta info from CRAN
 #' @examples
+#' \donttest{
 #' ca <- cran_alias("BWStest")
 #' head(ca)
+#' }
 cran_alias <- function(packages = NULL) {
     stopifnot("Requires at least R 4.5.0" = check_r_version())
     stopifnot("NULL or a character string" = is.null(packages) || is.character(packages))
-    raw_alias <- save_state("cran_aliases", tools::CRAN_aliases_db())
+    raw_alias <- save_state(c("CRAN aliases" = "cran_aliases"), tools::CRAN_aliases_db())
     if (is_not_data(raw_alias)) {
         return(NA)
     }
-    check_packages(packages, NA)
+    check_pkg_names(packages, NA)
     # Place to store modified data
-    env <- "full_cran_aliases"
-    # Check for random packages
+    env <- c("processed CRAN aliases" ="full_cran_aliases")
+
+    # Check for missing packages
     current_packages <- names(raw_alias)
-    omit_pkg <- setdiff(packages, current_packages)
-    if (length(omit_pkg)) {
-        warning("Omitting packages ", toString(omit_pkg),
-                ".\nMaybe they are currently not on CRAN?", immediate. = TRUE,
-                call. = FALSE)
-    }
+    omit_pkg <- check_current_pkg(packages, current_packages)
+
     # Keep only packages that can be processed
     packages <- setdiff(packages, omit_pkg)
     if (!is.null(packages) && !length(packages)) {
@@ -37,11 +36,7 @@ cran_alias <- function(packages = NULL) {
 
     # Check if there is already data
     first_alias <- empty_env(env)
-    if (first_alias) {
-        alias <- NULL
-    } else {
-        alias <- pkg_state[[env]]
-    }
+    alias <- pkg_state[[env]]
 
     # Decide which packages are to be added to the data
     if (!is.null(packages) && !first_alias) {

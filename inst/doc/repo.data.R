@@ -29,11 +29,11 @@ head(cran_help_pages_wo_links(pkg))
 head(cran_help_pages_not_linked(pkg))
 
 ## ----cran_help_cliques, eval=requireNamespace("igraph", quietly = TRUE) && with_internet----
-cliques <- cran_help_cliques(pkg)
-# Number of help pages connected
-if (length(cliques) != 1) {
-    table(cliques$n) 
-}
+# cliques <- cran_help_cliques(pkg)
+# # Number of help pages connected
+# if (length(cliques) != 1L) {
+#     table(cliques$n)
+# }
 
 ## ----cran_help_pages_links_wo_deps, eval=with_internet------------------------
 cran_help_pages_links_wo_deps(pkg)
@@ -55,7 +55,7 @@ cran_date(versions)
 
 ## ----doom, eval=with_internet-------------------------------------------------
 cd <- cran_doom(bioc = TRUE)
-if (length(cd) != 1) {
+if (length(cd) != 1L) {
     cd[c("time_till_last", "last_archived", "npackages")]
     knitr::kable(head(cd$details))
 }

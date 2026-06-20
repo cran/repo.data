@@ -28,31 +28,28 @@
 #' }
 cran_archive <- function(packages = NULL) {
     stopifnot("Requires at least R 4.5.0" = check_r_version())
-    check_packages(packages, NA)
-    current <- save_state("current", tools::CRAN_current_db(), FALSE)
+    check_pkg_names(packages, NA)
+    current <- save_state(c("CRAN's packages" = "current"), tools::CRAN_current_db(), FALSE)
     if (is_not_data(current)) {
         return(NA)
     }
-    archive <- save_state("archive", tools::CRAN_archive_db(), FALSE)
+    archive <- save_state(c("CRAN's archived packages" = "archive"), tools::CRAN_archive_db(), FALSE)
     if (is_not_data(archive)) {
         return(NA)
     }
-    env <- "full_cran_archive"
+    env <- c("processed CRAN's packages" = "full_cran_archive")
     arch_names <- names(archive)
     curr_names <- gsub("_.+", "", rownames(current)) # Rownames without version
     # Check for random packages
     all_names <- unique(c(arch_names, curr_names))
     omit_pkg <- setdiff(packages, all_names)
-    if (length(omit_pkg)) {
-        warning("Omitting packages ", toString(omit_pkg),
-                ".\nMaybe they were not on CRAN?", immediate. = TRUE)
-    }
+    omitting_packages(omit_pkg)
     # Keep only packages that can be processed
     packages <- setdiff(packages, omit_pkg)
     if (!is.null(packages) && !length(packages)) {
         return(NULL)
     }
-
+    
     # Check if there is already data
     first_arch <- empty_env(env)
     if (first_arch) {
@@ -60,10 +57,10 @@ cran_archive <- function(packages = NULL) {
     } else {
         arch <- pkg_state[[env]]
     }
-
+    
     # Packages with archive data to add
     pkgs2add <- setdiff(arch_names, arch[arch[, "status"] != "current", "package"])
-
+    
     # Decide which packages are to be added to the data
     new_packages <- if (!is.null(packages)) {
         packages
@@ -71,7 +68,7 @@ cran_archive <- function(packages = NULL) {
         all_names
     }
     new_packages <- intersect(new_packages, pkgs2add)
-
+    
     # Add new package's data
     if (length(new_packages)) {
         new_arch <- arch2m(archive[new_packages])
@@ -80,50 +77,42 @@ cran_archive <- function(packages = NULL) {
         warnings_archive(arch)
         pkg_state[[env]] <- arch
     }
-
+    
+    out <- save_state(env, arch)
     if (is.null(packages)) {
-        arch2df(arch)
+        return(arch2df(out))
+    }
+    
+    if (all(packages %in% out[, "package"])) {
+        arch2df(out[pkg_in_x(out, packages), , drop = FALSE])
     } else {
         arch2df(arch[arch[, "package"] %in% packages, , drop = FALSE])
     }
 }
 
-
-# Like CRAN archive but provides the published date and the date of archival if known
-cran_archive_dates <- function() {
-    ca <- save_state("full_cran_archive", cran_archive())
-    if (is_not_data(ca)) {
+cran_packages <- function() {
+    current_packages <- current_cran_packages()
+    if (is_not_data(current_packages)) {
         return(NA)
     }
-    dates <- split(ca$published_date, ca$package)
-    l <- lapply(dates, function(x) {
-        c(x[-length(x)] - 1L, NA)
-    })
-    ca$archived_date <- as.POSIXlt(funlist(l), tz = cran_tz)
-    ca$archived_date[ca$status == "current"] <- as.POSIXlt(Sys.time(), tz = cran_tz)
-    ca
-
-    # TODO match package version with dates of archival or removal
-    cc <- save_state("cran_comments", cran_comments())
-    if (is_not_data(cc)) {
-        return(NA)
-    }
-    w <- which(cc$action %in% c("archived", "removed", "replaced", "renamed"))
-    cc[w, ]
-}
-
-
-cran_packages <- function(packages = NULL) {
-    current <- save_state("current", tools::CRAN_current_db(), FALSE)
-    if (is_not_data(current)) {
-        return(NA)
-    }
-    archive <- save_state("archive", tools::CRAN_archive_db(), FALSE)
+    archive <- save_state(c("CRAN archive database" = "archive"), 
+        tools::CRAN_archive_db(), FALSE)
     if (is_not_data(archive)) {
         return(NA)
     }
-    s <- strsplit(rownames(current), "_", fixed = TRUE)
-    current_packages <- vapply(s, "[", FUN.VALUE = character(1L), i = 1L)
     archive_packages <- names(archive)
-    unique(current_packages, archive_packages)
+    cran_packages <- unique(current_packages, archive_packages)
+    save_state(c("CRAN's packages" = "cran_packages"), 
+        cran_packages, verbose = FALSE)
+    
+}
+
+current_cran_packages <- function() {
+    current <- save_state(c("names packages on CRAN" = "current"), 
+        tools::CRAN_current_db(), FALSE)
+    if (is_not_data(current)) {
+        return(NA)
+    }
+    s <- strsplit(rownames(current), "_", fixed = TRUE)
+    vapply(s, "[", FUN.VALUE = character(1L), i = 1L)
 }

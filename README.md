@@ -14,7 +14,9 @@ The goal of repo.data is to make repository data accessible. Mainly it
 consumes existing data but the idea is to also generate it.
 
 When a function is specific of a repository it will start with its name:
-`cran_` or `bioc_`.
+`cran_` or `bioc_`. Some functions have their equivalent for all
+repositories that provide this information (CRAN and Bioconductor that
+I’m aware of).
 
 ## Installation
 
@@ -36,25 +38,29 @@ We can get a data.frame of all packages on CRAN archive:
 
 ``` r
 library(repo.data)
+#> 
+#> Attaching package: 'repo.data'
+#> The following object is masked from 'package:stats':
+#> 
+#>     alias
 ca <- cran_archive()
 #> Warning: There are 4 packages both archived and published
 #> This indicate manual CRAN intervention.
 head(ca)
-#>         Package            Datetime Version   User   Size   Status
-#> 1            A3 2013-02-07 10:00:29   0.9.1 hornik  45252 archived
-#> 2            A3 2013-03-26 19:58:40   0.9.2 ligges  45907 archived
-#> 3            A3 2015-08-16 23:05:54   1.0.0 hornik  42810 archived
-#> 4 AalenJohansen 2023-03-01 11:42:11     1.0 ligges 165057  current
-#> 5       aamatch 2025-06-24 11:40:05   0.3.7 ligges 222104  current
-#> 6          aaMI 2005-06-24 17:55:17   1.0-0   root   2968 archived
+#>     Package            Datetime Version   User    Size   Status
+#> 1 a11yShiny 2026-03-30 21:20:21   0.1.3 ligges   71907  current
+#> 2        A3 2013-02-07 10:00:29   0.9.1 hornik   45252 archived
+#> 3        A3 2013-03-26 19:58:40   0.9.2 ligges   45907 archived
+#> 4        A3 2015-08-16 23:05:54   1.0.0 hornik   42810 archived
+#> 5       a5R 2026-03-16 20:10:23   0.2.0 ligges 3685016 archived
+#> 6       a5R 2026-03-26 13:30:08   0.3.1 ligges 3706043  current
 ```
 
 We can also check CRAN comments about the packages on its archive:
 
 ``` r
 cc <- cran_comments()
-#> Retrieving comments, this might take a bit.
-#> Caching results to be faster next call in this session.
+#> Downloading and caching CRAN's comments for this session.
 head(cc)
 #>    package
 #> 1       A3
@@ -84,12 +90,12 @@ on the session info or a data.frame:
 
 ``` r
 cran_session(session = sessionInfo())
-#> [1] "2025-08-27 18:40:06 CEST"
+#> [1] "2026-03-26 17:30:10 CET"
 ip <- installed.packages()
 cran_date(ip)
-#> Warning in cran_archive(versions[, "Package"]): Omitting packages airway, alabaster.base, alabaster.matrix, alabaster.ranges, alabaster.sce, alabaster.schemas, alabaster.se, annotate, AnnotationDbi, AnnotationFilter, AnnotationHub, assorthead, Biobase, BiocFileCache, BiocGenerics, BiocIO, BioCor, BiocParallel, BiocPkgTools, BiocStyle, BiocVersion, biocViews, biomformat, Biostrings, cransays, DelayedArray, DESeq2, ensembldb, ExperimentHub, fgsea, GenomeInfoDb, GenomeInfoDbData, GenomicAlignments, GenomicFeatures, GenomicRanges, GO.db, GOSemSim, GSEABase, gypsum, h5mread, HDF5Array, IRanges, KEGGREST, MatrixGenerics, microshades, org.Hs.eg.db, phyloseq, preprocessCore, ProtGenerics, reactome.db, resios, rhdf5, rhdf5filters, Rhdf5lib, Rhtslib, rostemplate, rotemplate, Rsamtools, rtracklayer, rutils, S4Arrays, S4Vectors, scRNAseq, SingleCellExperiment, SparseArray, SummarizedExperiment, UCSC.utils, XVector.
-#> Maybe they were not on CRAN?
-#> [1] "2025-08-29 16:00:06 CEST"
+#> Warning: Some packages are not currently available. Omitting packages:
+#> 'annotate', 'AnnotationDbi', 'Biobase', 'BiocGenerics', 'BioCor', 'BiocParallel', 'BiocVersion', 'Biostrings', 'cransays', 'GSEABase', 'IRanges', 'KEGGREST', 'rotemplate', 'rutils', 'S4Vectors', 'Seqinfo', 'XVector'.
+#> [1] "2026-04-04 10:00:06 CEST"
 ```
 
 ## Related packages

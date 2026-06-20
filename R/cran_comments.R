@@ -25,17 +25,17 @@
 #' head(cc)
 #' }
 cran_comments <- function(packages = NULL) {
-    out <- save_state("cran_comments", cran_all_comments(), verbose = FALSE)
+    out <- save_state(c("CRAN's comments" = "cran_comments"), cran_all_comments(), verbose = FALSE)
     if (!is.data.frame(out) && !is.matrix(out)) {
         return(NA)
     }
-    check_packages(packages, NA)
+    check_pkg_names(packages, NA)
     get_package_subset("cran_comments", packages)
 }
 
 
 cran_all_comments <- function() {
-    file <- save_state("comments", read_CRAN("/src/contrib/PACKAGES.in"))
+    file <- save_state(c("CRAN's comments" = "comments"), read_CRAN("/src/contrib/PACKAGES.in"))
     if (is_not_data(file)) {
         return(NA)
     }
@@ -52,7 +52,7 @@ cran_all_comments <- function() {
     # browser()
     # fh2 <- merge_comments(fh, "action")
 
-    save_state("cran_comments", fh, verbose = FALSE)
+    save_state(c("CRAN's processed comments" = "cran_comments"), fh, verbose = FALSE)
 }
 
 
@@ -83,23 +83,23 @@ merge_comments <- function(df, column) {
     }
     o <- outer(ends, starts, "-")
     d <- abs(diag(o))
-    wd <- which(d > 5)
-    while (length(wd) > 1) {
+    wd <- which(d > 5L)
+    while (length(wd) > 1L) {
         if (length(ends) > length(starts)) {
-            ends <- ends[-wd[1]]
+            ends <- ends[-wd[1L]]
         } else if (length(starts) > length(ends)) {
-            starts <- starts[-wd[1]]
+            starts <- starts[-wd[1L]]
         }
         o <- outer(ends, starts, "-")
         d <- abs(diag(o))
-        wd <- which(d > 5)
+        wd <- which(d > 5L)
     }
     stopifnot("Merging comments that don't match" = length(starts) == length(ends))
 
     # Do not merge comments that involve different packages
     diff_pkg <- which(df$package[starts] != df$package[ends])
     stopifnot("Would merge comments for different packages" = !length(diff_pkg))
-    rows_same_pkg <- mapply(seq, from = starts, to = ends)
+    rows_same_pkg <- Map(seq, from = starts, to = ends)
     if (all(lengths(rows_same_pkg) <= 1L)) {
         return(df)
     }
@@ -132,7 +132,7 @@ extract_field <- function(file,
     comments_df <- cbind(df,
                          strcapture(pattern = regex_date, x = df$comment,
                                     proto = data.frame(date = Sys.Date()[0])),
-                         strcapture(pattern = regex_action, x = df$comment,
+                         strcapture_m(pattern = regex_action, x = df$comment,
                                     proto = data.frame(action = character()))
     )
     comments_df <- comments_df[!is.na(comments_df$comment), ]
