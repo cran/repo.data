@@ -19,11 +19,11 @@ This makes harder to navigate to related help pages.
 }
 \examples{
 \donttest{
-ap <- available.packages()
+ap <- available.packages(repos = check_repos())
 if (NROW(ap)) {
-    a_package <- rownames(ap)[startsWith(rownames(ap), "A")][1]
-    chnl <- cran_help_pages_not_linked(a_package)
-    head(chnl)
+  a_package <- rownames(ap)[startsWith(rownames(ap), "A")][1]
+  chnl <- cran_help_pages_not_linked(a_package)
+  head(chnl)
 }
 }
 }

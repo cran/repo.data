@@ -1,5 +1,6 @@
+repo.data:::skip_on_cran()
 library("repo.data")
-
+chooseCRANmirror(ind = 1)
 bca <- bioc_cran_archived()
 repo.data:::no_internet(bca)
 stopifnot(colnames(bca) == c("Package", "Archived", "n"))

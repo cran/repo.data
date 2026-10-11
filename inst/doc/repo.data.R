@@ -5,7 +5,7 @@ knitr::opts_chunk$set(
 )
 options(repos = c("@CRAN@" = "https://CRAN.R-project.org"))
 with_internet <- as.logical(NROW(suppressWarnings(available.packages())))
-library(repo.data)
+library("repo.data")
 
 ## ----package_dependencies-----------------------------------------------------
 pd <- package_dependencies("ggeasy")
@@ -29,11 +29,11 @@ head(cran_help_pages_wo_links(pkg))
 head(cran_help_pages_not_linked(pkg))
 
 ## ----cran_help_cliques, eval=requireNamespace("igraph", quietly = TRUE) && with_internet----
-# cliques <- cran_help_cliques(pkg)
-# # Number of help pages connected
-# if (length(cliques) != 1L) {
-#     table(cliques$n)
-# }
+cliques <- cran_help_cliques(pkg)
+# Number of help pages connected
+if (length(cliques) != 1L) {
+  table(cliques$n)
+}
 
 ## ----cran_help_pages_links_wo_deps, eval=with_internet------------------------
 cran_help_pages_links_wo_deps(pkg)
@@ -46,8 +46,10 @@ nrow(cs)
 cran_session()
 
 ## ----cran_date, eval=with_internet--------------------------------------------
-versions <- data.frame(Package = c("dplyr", "Rcpp", "rlang"),
-                       Version = c("1.1.4", "0.8.9", NA))
+versions <- data.frame(
+  Package = c("dplyr", "Rcpp", "rlang"),
+  Version = c("1.1.4", "0.8.9", NA)
+)
 cran_date(versions)
 
 ## ----cran_installed, eval=FALSE-----------------------------------------------
@@ -56,8 +58,8 @@ cran_date(versions)
 ## ----doom, eval=with_internet-------------------------------------------------
 cd <- cran_doom(bioc = TRUE)
 if (length(cd) != 1L) {
-    cd[c("time_till_last", "last_archived", "npackages")]
-    knitr::kable(head(cd$details))
+  cd[c("time_till_last", "last_archived", "npackages")]
+  knitr::kable(head(cd$details))
 }
 
 ## ----sessions-----------------------------------------------------------------
